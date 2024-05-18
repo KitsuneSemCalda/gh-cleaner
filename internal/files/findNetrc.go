@@ -19,6 +19,7 @@ func fileExists(f string) bool {
 	return !os.IsNotExist(err)
 }
 
+// This function generates the default path from .netrc and return if file exists
 func GetNetrc() string {
 	path := filepath.Join(getHome(), ".netrc")
 
