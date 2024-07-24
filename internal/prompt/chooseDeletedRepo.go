@@ -2,16 +2,20 @@ package prompt
 
 import (
 	"fmt"
-	gh "gh-cleaner/internal/github"
+	"gh-cleaner/internal/files"
 	"gh-cleaner/internal/structures"
 	"log"
 	"strings"
 
+	bayestheorem "gh-cleaner/internal/bayes_theorem"
+
 	"github.com/google/go-github/v62/github"
+	"github.com/jbrukh/bayesian"
 	"github.com/manifoldco/promptui"
 )
 
-func brokenRepo(repo *github.Repository) {
+// displayRepo prints repository details in a formatted manner
+func displayRepo(repo *github.Repository) {
 	fmt.Print("\n")
 	fmt.Println("===================================================")
 	fmt.Printf("repoName: %s\n", repo.GetName())
@@ -29,64 +33,59 @@ func brokenRepo(repo *github.Repository) {
 	fmt.Print("\n")
 }
 
-func SelectRepo(l structures.Login, r []*github.Repository, f bool) {
+// convertToGitHubRepos converts a slice of structures.Repository to a slice of *github.Repository
+func convertToGitHubRepos(srepos []*structures.Repository) []*github.Repository {
+	var repos []*github.Repository
+	for _, repo := range srepos {
+		repos = append(repos, repo.OriginalRepo)
+	}
+	return repos
+}
+
+// promptDeleteRepo prompts the user to confirm the deletion of a repository
+func promptDeleteRepo(repo *github.Repository) bool {
+	displayRepo(repo)
+	prompt := promptui.Prompt{
+		Label: fmt.Sprintf("Can Delete the repo: %s [use (Y/N)]", repo.GetName()),
+	}
+
+	result, err := prompt.Run()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	return strings.ToLower(result) == "y"
+}
+
+// handleRepoDeletion processes the deletion of repositories based on user confirmation
+func handleRepoDeletion(login structures.Login, repos []*github.Repository) {
+	for _, repo := range repos {
+		isConfirmed := confirmDownload(repo)
+		files.SaveRepositoryFiles(repo, isConfirmed) // Save the data is useful
+		// gh.DeleteRepository(login, repo, isConfirmed) // Disable deletion from data construction
+	}
+}
+
+// SelectRepo selects and processes repositories for deletion
+func SelectRepo(login structures.Login, repos []*github.Repository, classifier *bayesian.Classifier, forkFlag bool) {
+	if classifier == nil {
+		log.Fatalln("Error: The classifier has not been initialized.")
+	}
+
+	sortedRepos := bayestheorem.SortRepos(repos, classifier)
+	nrepos := convertToGitHubRepos(sortedRepos)
+
 	var deletedRepos []*github.Repository
-	for _, repo := range r {
-		if f {
-			fmt.Println()
-			brokenRepo(repo)
-			fmt.Println()
 
-			prompt := promptui.Prompt{
-				Label: fmt.Sprintf("Can Delete the repo: %s [use (Y/N)]", repo.GetName()),
-			}
-
-			result, err := prompt.Run()
-			if err != nil {
-				log.Fatalln(err)
-			}
-
-			lowered := strings.ToLower(result)
-
-			switch lowered {
-			case "y":
+	for _, repo := range nrepos {
+		if forkFlag || (!forkFlag && !repo.GetFork()) {
+			if promptDeleteRepo(repo) {
 				deletedRepos = append(deletedRepos, repo)
-			case "n":
-				continue
-			default:
-				fmt.Println("Invalid input, skipping...")
-			}
-		} else {
-			if !f && !*repo.Fork {
-				fmt.Println()
-				brokenRepo(repo)
-				fmt.Println()
-
-				prompt := promptui.Prompt{
-					Label: fmt.Sprintf("Can Delete the repo: %s [use (Y/N)]", repo.GetName()),
-				}
-
-				result, err := prompt.Run()
-				if err != nil {
-					log.Fatalln(err)
-				}
-
-				lowered := strings.ToLower(result)
-
-				switch lowered {
-				case "y":
-					deletedRepos = append(deletedRepos, repo)
-				case "n":
-					continue
-				default:
-					fmt.Println("Invalid input, skipping...")
-				}
+			} else {
+				fmt.Println("Skipping...")
 			}
 		}
 	}
 
-	for _, fromDelete := range deletedRepos {
-		isConfirmed := confirmDownload(fromDelete)
-		gh.DeleteRepository(l, fromDelete, isConfirmed)
-	}
+	handleRepoDeletion(login, deletedRepos)
 }
