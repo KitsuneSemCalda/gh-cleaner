@@ -24,7 +24,7 @@ func populateUnexistFile(fpath string, g *github.Repository) {
 	}
 
 	for _, element := range structure.GetAllValues() {
-		file.WriteString(element)
+		file.WriteString(element + "\n")
 	}
 }
 
