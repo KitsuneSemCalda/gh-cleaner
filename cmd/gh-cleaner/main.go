@@ -20,6 +20,7 @@ var (
 
 func main() {
 	dry_run := flag.Bool("dry-run", false, "Enable dry run mode for training the bayes theorem")
+	forks := flag.Bool("forks", false, "Enable forks to enable delete repository forked")
 	flag.Parse()
 
 	netrcPath = files.GetNetrc()
@@ -32,12 +33,12 @@ func main() {
 	login = files.MountLogin(netrcPath)
 	savedRepos, deletedRepos := files.GetInfoAboutRepo()
 
-	if (savedRepos == nil) && (deletedRepos == nil) {
+	if (savedRepos == nil) && (deletedRepos == nil) && (*dry_run == false) {
 		fmt.Println("Run the code with flag --dry-run to create a mock files from this project")
 		return
 	}
 
 	classifier := bayestheorem.GenerateClassifier(deletedRepos, savedRepos)
 
-	prompt.SelectRepo(login, *dry_run, github.GetRepositoriesByToken(login), classifier, forks)
+	prompt.SelectRepo(login, *dry_run, github.GetRepositoriesByToken(login), classifier, *forks)
 }
