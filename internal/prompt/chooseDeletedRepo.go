@@ -2,12 +2,12 @@ package prompt
 
 import (
 	"fmt"
+	bayestheorem "gh-cleaner/internal/bayes_theorem"
 	"gh-cleaner/internal/files"
+	gh "gh-cleaner/internal/github"
 	"gh-cleaner/internal/structures"
 	"log"
 	"strings"
-
-	bayestheorem "gh-cleaner/internal/bayes_theorem"
 
 	"github.com/google/go-github/v62/github"
 	"github.com/jbrukh/bayesian"
@@ -58,16 +58,20 @@ func promptDeleteRepo(repo *github.Repository) bool {
 }
 
 // handleRepoDeletion processes the deletion of repositories based on user confirmation
-func handleRepoDeletion(login structures.Login, repos []*github.Repository) {
+func handleRepoDeletion(login structures.Login, repos []*github.Repository, dry_run bool) {
 	for _, repo := range repos {
 		isConfirmed := confirmDownload(repo)
 		files.SaveRepositoryFiles(repo, isConfirmed) // Save the data is useful
-		// gh.DeleteRepository(login, repo, isConfirmed) // Disable deletion from data construction
+
+		// If dry_run is true, we can delete the repo "dry_run starts false your negation is true"
+		if !dry_run {
+			gh.DeleteRepository(login, repo, isConfirmed)
+		}
 	}
 }
 
 // SelectRepo selects and processes repositories for deletion
-func SelectRepo(login structures.Login, repos []*github.Repository, classifier *bayesian.Classifier, forkFlag bool) {
+func SelectRepo(login structures.Login, dry_run bool, repos []*github.Repository, classifier *bayesian.Classifier, forkFlag bool) {
 	if classifier == nil {
 		log.Fatalln("Error: The classifier has not been initialized.")
 	}
@@ -87,5 +91,5 @@ func SelectRepo(login structures.Login, repos []*github.Repository, classifier *
 		}
 	}
 
-	handleRepoDeletion(login, deletedRepos)
+	handleRepoDeletion(login, deletedRepos, dry_run)
 }
