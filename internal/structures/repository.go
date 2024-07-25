@@ -9,22 +9,32 @@ import (
 )
 
 type Repository struct {
-	RepositoryName   string
-	RepositoryStar   string
-	RepositoryIssues string
-	RepositoryForks  string
+	RepositoryName        string
+	RepositoryStar        string
+	RepositoryIssues      string
+	RepositoryForks       string
+	RepositorySubscribers string
+	Probability           float64
+
+	OriginalRepo *github.Repository
 }
 
 func CreateRepository(g *github.Repository) Repository {
 	stars := strconv.Itoa(g.GetStargazersCount())
 	issues := strconv.Itoa(g.GetOpenIssues())
 	forks := strconv.Itoa(g.GetOpenIssues())
+	subscribers := strconv.Itoa(g.GetSubscribersCount())
 
 	return Repository{
-		RepositoryName:   g.GetName(),
-		RepositoryStar:   stars,
-		RepositoryIssues: issues,
-		RepositoryForks:  forks,
+		RepositoryName:        g.GetName(),
+		RepositoryStar:        stars,
+		RepositoryIssues:      issues,
+		RepositoryForks:       forks,
+		RepositorySubscribers: subscribers,
+
+		Probability: 0.0,
+
+		OriginalRepo: g,
 	}
 }
 
