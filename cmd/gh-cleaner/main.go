@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	bayestheorem "gh-cleaner/internal/bayes_theorem"
 	"gh-cleaner/internal/files"
 	"gh-cleaner/internal/github"
@@ -33,12 +32,6 @@ func main() {
 	login = files.MountLogin(netrcPath)
 	savedRepos, deletedRepos := files.GetInfoAboutRepo()
 
-	if (savedRepos == nil) && (deletedRepos == nil) && (*dry_run == false) {
-		fmt.Println("Run the code with flag --dry-run to create a mock files from this project")
-		return
-	}
-
 	classifier := bayestheorem.GenerateClassifier(deletedRepos, savedRepos)
-
 	prompt.SelectRepo(login, *dry_run, github.GetRepositoriesByToken(login), classifier, *forks)
 }
