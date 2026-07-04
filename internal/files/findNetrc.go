@@ -5,10 +5,12 @@ import (
 	"path/filepath"
 )
 
-// This function returns the user home
-// we use the os.GetEnv to get the enviroment variable HOME
 func getHome() string {
-	return os.Getenv("HOME")
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return os.Getenv("HOME")
+	}
+	return home
 }
 
 // This function check if the file fileExists
