@@ -2,7 +2,6 @@ package files
 
 import (
 	"gh-cleaner/internal/structures"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -11,57 +10,42 @@ import (
 
 func createDirectory(path string) {
 	if !fileExists(path) {
-		os.MkdirAll(path, 0777)
+		os.MkdirAll(path, 0755)
 	}
 }
 
-func populateUnexistFile(fpath string, g *github.Repository) {
+func writeRepositoryFile(fpath string, g *github.Repository) error {
 	structure := structures.CreateRepository(g)
-	file, err := os.Create(fpath)
+	file, err := os.OpenFile(fpath, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
 	if err != nil {
-		log.Println("Ocurred an unknown error in create file: ", err.Error())
-		return
+		return err
+	}
+	defer file.Close()
+
+	for _, element := range structure.DataFields() {
+		if _, err := file.WriteString(element + "\n"); err != nil {
+			return err
+		}
 	}
 
-	for _, element := range structure.GetAllValues() {
-		file.WriteString(element + "\n")
-	}
+	return nil
 }
 
-func populateExistedFile(fpath string, g *github.Repository) {
-	structure := structures.CreateRepository(g)
-	file, err := os.OpenFile(fpath, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0777)
-	if err != nil {
-		log.Println("Ocurred an unknown error in create file: ", err.Error())
-		return
-	}
-
-	for _, element := range structure.GetAllValues() {
-		file.WriteString(element + "\n")
-	}
-}
-
-func createFile(path string, file string, g *github.Repository) {
+func createFile(path string, file string, g *github.Repository) error {
 	fpath := filepath.Join(path, file)
-	if !fileExists(fpath) {
-		populateUnexistFile(fpath, g)
-	}
-
-	populateExistedFile(fpath, g)
+	return writeRepositoryFile(fpath, g)
 }
 
-func SaveRepositoryFiles(g *github.Repository, isDeleted bool) {
-	path := filepath.Join(getHome(), ".local", "share", "gh-cleaner", "repository")
+func SaveRepositoryFiles(g *github.Repository, isDeleted bool) error {
+	path := repoDir()
 
 	if isDeleted {
 		deletedPath := filepath.Join(path, "deleted")
-
 		createDirectory(deletedPath)
-		createFile(deletedPath, g.GetName(), g)
-		return
+		return createFile(deletedPath, g.GetName(), g)
 	}
 
 	savedPath := filepath.Join(path, "saved")
 	createDirectory(savedPath)
-	createFile(savedPath, g.GetName(), g)
+	return createFile(savedPath, g.GetName(), g)
 }

@@ -1,8 +1,6 @@
 package structures
 
 import (
-	"fmt"
-	"reflect"
 	"strconv"
 
 	"github.com/google/go-github/v62/github"
@@ -22,7 +20,7 @@ type Repository struct {
 func CreateRepository(g *github.Repository) Repository {
 	stars := strconv.Itoa(g.GetStargazersCount())
 	issues := strconv.Itoa(g.GetOpenIssues())
-	forks := strconv.Itoa(g.GetOpenIssues())
+	forks := strconv.Itoa(g.GetForksCount())
 	subscribers := strconv.Itoa(g.GetSubscribersCount())
 
 	return Repository{
@@ -38,23 +36,33 @@ func CreateRepository(g *github.Repository) Repository {
 	}
 }
 
-func (r *Repository) GetAllValues() []string {
-	var fieldNames []string
-
-	val := reflect.ValueOf(r)
-
-	if val.Kind() == reflect.Ptr {
-		val = val.Elem()
+func (r *Repository) DataFields() []string {
+	return []string{
+		r.RepositoryName,
+		r.RepositoryStar,
+		r.RepositoryIssues,
+		r.RepositoryForks,
+		r.RepositorySubscribers,
 	}
+}
 
-	if val.Kind() != reflect.Struct {
-		return nil
+func (r *Repository) GetClassifierValues() []string {
+	return []string{
+		r.RepositoryStar,
+		r.RepositoryIssues,
+		r.RepositoryForks,
+		r.RepositorySubscribers,
 	}
+}
 
-	for i := 0; i < val.NumField(); i++ {
-		fieldValue := val.Field(i).Interface()
-		fieldNames = append(fieldNames, fmt.Sprintf("%v", fieldValue))
-	}
+type RepoDatum struct {
+	Name        string
+	Stars       string
+	Issues      string
+	Forks       string
+	Subscribers string
+}
 
-	return fieldNames
+func (rd RepoDatum) Tokens() []string {
+	return []string{rd.Stars, rd.Issues, rd.Forks, rd.Subscribers}
 }

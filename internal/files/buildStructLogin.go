@@ -3,17 +3,15 @@ package files
 import (
 	"bufio"
 	"gh-cleaner/internal/structures"
-	"log"
 	"os"
 	"strings"
 )
 
-// This function receives the .netrc path and build a struct Login
-func MountLogin(p string) structures.Login {
+func MountLogin(p string) (structures.Login, error) {
 	var login, token string
 	file, err := os.Open(p)
 	if err != nil {
-		log.Fatalln(err)
+		return structures.Login{}, err
 	}
 
 	defer file.Close()
@@ -24,11 +22,17 @@ func MountLogin(p string) structures.Login {
 		line := scanner.Text()
 
 		if strings.Contains(line, "machine github.com") {
-			words := strings.Split(line, " ")
-			login = words[3]
-			token = words[5]
+			words := strings.Fields(line)
+			for i, w := range words {
+				if w == "login" && i+1 < len(words) {
+					login = words[i+1]
+				}
+				if w == "password" && i+1 < len(words) {
+					token = words[i+1]
+				}
+			}
 		}
 	}
 
-	return structures.CreateLogin(login, token)
+	return structures.CreateLogin(login, token), nil
 }

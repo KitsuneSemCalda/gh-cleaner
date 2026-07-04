@@ -15,20 +15,10 @@ func CreateLogin(l string, t string) Login {
 	}
 }
 
-// Getter Method to catch the builded token
 func (l *Login) GetToken() string {
-	if (l.token) != "" {
-		return l.token
-	}
-
-	return ""
+	return l.token
 }
 
-// Getter Method to catch the builded login
 func (l *Login) GetLogin() string {
-	if (l.login) != "" {
-		return l.login
-	}
-
-	return ""
+	return l.login
 }

@@ -2,7 +2,7 @@ package prompt
 
 import (
 	"fmt"
-	bayestheorem "gh-cleaner/internal/bayes_theorem"
+	"gh-cleaner/internal/bayes"
 	"gh-cleaner/internal/files"
 	gh "gh-cleaner/internal/github"
 	"gh-cleaner/internal/structures"
@@ -51,45 +51,37 @@ func promptDeleteRepo(repo *github.Repository) bool {
 
 	result, err := prompt.Run()
 	if err != nil {
-		log.Fatalln(err)
+		return false
 	}
 
 	return strings.ToLower(result) == "y"
 }
 
-// handleRepoDeletion processes the deletion of repositories based on user confirmation
-func handleRepoDeletion(login structures.Login, repos []*github.Repository, dry_run bool) {
-	for _, repo := range repos {
-		isConfirmed := confirmDownload(repo)
-		files.SaveRepositoryFiles(repo, isConfirmed) // Save the data is useful
-
-		// If dry_run is true, we can delete the repo "dry_run starts false your negation is true"
-		if !dry_run {
-			gh.DeleteRepository(login, repo, isConfirmed)
-		}
-	}
-}
-
-// SelectRepo selects and processes repositories for deletion
 func SelectRepo(login structures.Login, dry_run bool, repos []*github.Repository, classifier *bayesian.Classifier, forkFlag bool) {
 	if classifier == nil {
-		log.Fatalln("Error: The classifier has not been initialized.")
+		log.Println("Classifier not initialized, skipping sort.")
+		return
 	}
 
-	sortedRepos := bayestheorem.SortRepos(repos, classifier)
+	sortedRepos := bayes.SortRepos(repos, classifier)
 	nrepos := convertToGitHubRepos(sortedRepos)
-
-	var deletedRepos []*github.Repository
 
 	for _, repo := range nrepos {
 		if forkFlag || (!forkFlag && !repo.GetFork()) {
 			if promptDeleteRepo(repo) {
-				deletedRepos = append(deletedRepos, repo)
+				isConfirmed := confirmDeletion(repo)
+				if err := files.SaveRepositoryFiles(repo, isConfirmed); err != nil {
+					log.Println("Failed to save repository file: ", err.Error())
+				}
+
+				if !dry_run && isConfirmed {
+					if err := gh.DeleteRepository(login, repo); err != nil {
+						log.Println("Failed to delete repository: ", err.Error())
+					}
+				}
 			} else {
 				fmt.Println("Skipping...")
 			}
 		}
 	}
-
-	handleRepoDeletion(login, deletedRepos, dry_run)
 }

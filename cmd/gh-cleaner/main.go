@@ -2,36 +2,57 @@ package main
 
 import (
 	"flag"
-	bayestheorem "gh-cleaner/internal/bayes_theorem"
+	"fmt"
+	"gh-cleaner/internal/bayes"
 	"gh-cleaner/internal/files"
 	"gh-cleaner/internal/github"
 	"gh-cleaner/internal/prompt"
 	"gh-cleaner/internal/structures"
 	"log"
-)
 
-var (
-	netrcPath string = ""
-	forks     bool   = true
-	dry_run   bool   = false
-	login     structures.Login
+	"github.com/jbrukh/bayesian"
 )
 
 func main() {
-	dry_run := flag.Bool("dry-run", false, "Enable dry run mode for training the bayes theorem")
+	dryRun := flag.Bool("dry-run", false, "Enable dry run mode for training the bayes theorem")
 	forks := flag.Bool("forks", false, "Enable forks to enable delete repository forked")
 	flag.Parse()
 
-	netrcPath = files.GetNetrc()
-
-	if netrcPath == "" {
-		log.Println(".netrc not founded")
+	login, err := loadLogin()
+	if err != nil {
+		log.Println(err.Error())
 		return
 	}
 
-	login = files.MountLogin(netrcPath)
-	savedRepos, deletedRepos := files.GetInfoAboutRepo()
+	classifier := buildClassifier()
 
-	classifier := bayestheorem.GenerateClassifier(deletedRepos, savedRepos)
-	prompt.SelectRepo(login, *dry_run, github.GetRepositoriesByToken(login), classifier, *forks)
+	repos, err := github.GetRepositoriesByToken(login)
+	if err != nil {
+		log.Println("Error fetching repositories: ", err.Error())
+		return
+	}
+
+	prompt.SelectRepo(login, *dryRun, repos, classifier, *forks)
+}
+
+func loadLogin() (structures.Login, error) {
+	netrcPath := files.GetNetrc()
+	if netrcPath == "" {
+		return structures.Login{}, fmt.Errorf(".netrc not found")
+	}
+
+	login, err := files.MountLogin(netrcPath)
+	if err != nil {
+		return structures.Login{}, fmt.Errorf("error reading .netrc: %w", err)
+	}
+
+	return login, nil
+}
+
+func buildClassifier() *bayesian.Classifier {
+	savedRepos, deletedRepos, err := files.GetInfoAboutRepo()
+	if err != nil {
+		log.Printf("Warning: could not load repository data: %v", err)
+	}
+	return bayes.GenerateClassifier(deletedRepos, savedRepos)
 }
