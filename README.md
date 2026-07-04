@@ -1,6 +1,6 @@
 # gh-cleaner
 
-A small command line interface to clean github using [.netrc](http://devfuria.com.br/git/netrc-nao-pedir-senha/), [bayes theorem](https://en.wikipedia.org/wiki/Bayes%27_theorem) and [prompt-ui](github.com/manifoldco/promptui)
+A small command line interface to clean github using [.netrc](http://devfuria.com.br/git/netrc-nao-pedir-senha/), [bayes theorem](https://en.wikipedia.org/wiki/Bayes%27_theorem) and [prompt-ui](https://github.com/manifoldco/promptui)
 
 ## Example
 
@@ -14,6 +14,6 @@ A small command line interface to clean github using [.netrc](http://devfuria.co
 > [!WARNING]
 > This project is under development. Contributions are welcome
 
-This code uses the [go-github](https://github.com/google/go-github) library to connect with github using the acess token in .netrc
+This code uses the [go-github](https://github.com/google/go-github) library to connect with github using the access token in .netrc
 
-.netrc is parsed and the username with acess token are used to give go-github authorization to list (private and public) repositories and delete him with user option
+.netrc is parsed and the username with access token are used to give go-github authorization to list (private and public) repositories and delete them with user option
