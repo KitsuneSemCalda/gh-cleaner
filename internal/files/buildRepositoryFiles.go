@@ -8,12 +8,6 @@ import (
 	"github.com/google/go-github/v62/github"
 )
 
-func createDirectory(path string) {
-	if !fileExists(path) {
-		os.MkdirAll(path, 0755)
-	}
-}
-
 func writeRepositoryFile(fpath string, g *github.Repository) error {
 	structure := structures.CreateRepository(g)
 	file, err := os.OpenFile(fpath, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
@@ -31,21 +25,16 @@ func writeRepositoryFile(fpath string, g *github.Repository) error {
 	return nil
 }
 
-func createFile(path string, file string, g *github.Repository) error {
-	fpath := filepath.Join(path, file)
-	return writeRepositoryFile(fpath, g)
-}
-
 func SaveRepositoryFiles(g *github.Repository, isDeleted bool) error {
-	path := repoDir()
-
+	sub := "saved"
 	if isDeleted {
-		deletedPath := filepath.Join(path, "deleted")
-		createDirectory(deletedPath)
-		return createFile(deletedPath, g.GetName(), g)
+		sub = "deleted"
 	}
 
-	savedPath := filepath.Join(path, "saved")
-	createDirectory(savedPath)
-	return createFile(savedPath, g.GetName(), g)
+	dir := filepath.Join(repoDir(), sub)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+
+	return writeRepositoryFile(filepath.Join(dir, g.GetName()), g)
 }
