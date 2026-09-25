@@ -52,7 +52,7 @@ On a first run, a warning about missing training data can appear before the revi
 ## Delete selected repositories
 
 > [!CAUTION]
-> Without `--dry-run`, confirming a deletion sends a real GitHub repository deletion request. Back up anything you need before proceeding. The second confirmation initially selects **Yes**; check the selected option before pressing Enter.
+> Without `--dry-run`, confirming a deletion sends a real GitHub repository deletion request. Back up anything you need before proceeding. The second confirmation initially selects **No**; you must deliberately move to **Yes** before pressing Enter.
 
 ```sh
 ./gh-cleaner

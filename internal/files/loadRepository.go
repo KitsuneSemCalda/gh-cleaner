@@ -15,6 +15,13 @@ func loadRepositories(dir string) ([]structures.RepoDatum, error) {
 
 	entries, err := os.ReadDir(spath)
 	if err != nil {
+		if os.IsNotExist(err) {
+			// No samples recorded for this class yet (e.g. every decision so
+			// far went the other way): an empty class, not a load failure -
+			// treating it as an error here used to make GetInfoAboutRepo
+			// discard the OTHER class's already-loaded data too.
+			return repos, nil
+		}
 		return nil, err
 	}
 
