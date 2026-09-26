@@ -7,8 +7,22 @@ import (
 	"github.com/google/go-github/v62/github"
 )
 
+// RepoLister is the thin slice of the GitHub API's Repositories service that
+// GetRepositoriesByToken depends on, defined separately from *github.Client
+// so tests can substitute a mock instead of hitting the real API.
+type RepoLister interface {
+	ListByAuthenticatedUser(ctx context.Context, opts *github.RepositoryListByAuthenticatedUserOptions) ([]*github.Repository, *github.Response, error)
+}
+
 func GetRepositoriesByToken(l structures.Login) ([]*github.Repository, error) {
 	client := getClient(l)
+	return listRepositories(client.Repositories)
+}
+
+// listRepositories paginates through the authenticated user's repositories
+// via the RepoLister interface, isolated from client construction so it can
+// be exercised with a mock in tests.
+func listRepositories(lister RepoLister) ([]*github.Repository, error) {
 	ctx := context.Background()
 
 	var allRepos []*github.Repository
@@ -21,7 +35,7 @@ func GetRepositoriesByToken(l structures.Login) ([]*github.Repository, error) {
 	}
 
 	for {
-		repos, resp, err := client.Repositories.ListByAuthenticatedUser(ctx, opts)
+		repos, resp, err := lister.ListByAuthenticatedUser(ctx, opts)
 		if err != nil {
 			return nil, err
 		}
